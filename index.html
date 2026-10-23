@@ -356,9 +356,16 @@
       </div>
     </div>
 
-    <div class="incident-badge">
-      <div class="pulse-dot"></div>
-      <span>INCIDENT #AZ-8921 &bull; PAYMENT-SERVICE CRITICAL</span>
+    <div style="display: flex; align-items: center; gap: 14px;">
+      <button id="btn-auto-tour" onclick="startAutoWalkthrough()"
+              style="background: linear-gradient(135deg, var(--napster-pink), var(--azure-blue)); color: #fff; border: 1px solid rgba(255, 255, 255, 0.2); padding: 7px 16px; border-radius: 20px; font-family: 'Inter', sans-serif; font-weight: 700; font-size: 12px; cursor: pointer; box-shadow: 0 0 16px rgba(221, 82, 203, 0.4); display: flex; align-items: center; gap: 6px; transition: transform 0.2s;">
+        <span>▶ Start 2-Min Auto-Demo (Hands-Free Video Recording)</span>
+      </button>
+
+      <div class="incident-badge">
+        <div class="pulse-dot"></div>
+        <span>INCIDENT #AZ-8921 &bull; PAYMENT-SERVICE CRITICAL</span>
+      </div>
     </div>
   </header>
 
@@ -655,6 +662,57 @@
         sendTextMessage(input.value);
         input.value = '';
       }
+    }
+
+    let tourActive = false;
+    function startAutoWalkthrough() {
+      if (tourActive) return;
+      tourActive = true;
+      const btn = document.getElementById('btn-auto-tour');
+      if (btn) btn.innerHTML = '<span>⏸ Running Auto-Demo Walkthrough...</span>';
+
+      appendTerminalLog('COMMANDER', '=== AUTOMATED HACKATHON DEMO WALKTHROUGH STARTED ===');
+
+      // Step 1: 0s - Briefing
+      sendTextMessage('Briefly state in two sentences that you have joined the war room and are monitoring the payment service latency spike on Azure.');
+
+      // Step 2: 25s - Real-time Diagnostics Tool
+      setTimeout(() => {
+        appendTerminalLog('INFO', '[AUTO-DEMO STEP 2/4] Triggering Real-Time Diagnostics Tool...');
+        sendTextMessage('What is the current health status and heap memory of the payment service?');
+      }, 25000);
+
+      // Step 3: 65s - Persistent Cross-Session Memory
+      setTimeout(() => {
+        appendTerminalLog('INFO', '[AUTO-DEMO STEP 3/4] Verifying Persistent Cross-Session Memory...');
+        sendTextMessage('Do you recall how we mitigated this exact memory leak in our last incident on October 15th?');
+      }, 65000);
+
+      // Step 4: 105s - Safety-Gated Rollback Tool
+      setTimeout(() => {
+        appendTerminalLog('INFO', '[AUTO-DEMO STEP 4/4] Executing Safety-Gated Rollback...');
+        sendTextMessage('Initiate rollback of payment-service to stable version v2.0.4.');
+      }, 105000);
+
+      // Step 5: 140s - Outage Recovery & Telemetry Normalization
+      setTimeout(() => {
+        appendTerminalLog('COMMANDER', '=== AKS POD ROLLBACK COMPLETE. TELEMETRY NORMALIZING ===');
+        const vals = document.querySelectorAll('.telemetry-value');
+        if (vals[0]) { vals[0].className = 'telemetry-value ok'; vals[0].innerText = '142 ms'; }
+        if (vals[1]) { vals[1].className = 'telemetry-value ok'; vals[1].innerText = '0.01%'; }
+        if (vals[2]) { vals[2].className = 'telemetry-value ok'; vals[2].innerText = '42.1%'; }
+        if (vals[3]) { vals[3].innerText = 'v2.0.4'; }
+
+        const badge = document.querySelector('.incident-badge');
+        if (badge) {
+          badge.style.background = 'rgba(63, 185, 80, 0.15)';
+          badge.style.borderColor = 'rgba(63, 185, 80, 0.4)';
+          badge.style.color = 'var(--status-ok)';
+          badge.innerHTML = '<span style="color: #3fb950; font-weight: 700;">✔ ALL SYSTEMS RECOVERED &bull; SLA RESTORED</span>';
+        }
+        if (btn) btn.innerHTML = '<span>✔ Demo Walkthrough Complete (2m 25s)</span>';
+        tourActive = false;
+      }, 140000);
     }
 
     // Auto-attempt connection on page load
