@@ -10,8 +10,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   
-  <!-- Napster SDK & Panel CSS -->
-  <link rel="stylesheet" href="/vendor/napster-sdk.css">
+  <!-- Napster SDK & Panel CSS (CDN with local fallback) -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@touchcastllc/napster-companion-api/lib/index.css">
   <link rel="stylesheet" href="/omniagent-ui.css">
 
   <style>
@@ -506,8 +506,8 @@
 
   </div>
 
-  <!-- Web SDK Script (Self-Contained Bundle) -->
-  <script src="/vendor/napster-sdk.js"></script>
+  <!-- Web SDK Script (Official High-Speed CDN) -->
+  <script src="https://cdn.jsdelivr.net/npm/@touchcastllc/napster-companion-api/lib/index.standalone.js"></script>
   
   <script>
     let sdkInstance = null;
@@ -537,8 +537,11 @@
       statusText.innerText = 'Requesting token from /token...';
 
       try {
-        // Step 1: Request connection token from local server (keeps API key secure)
-        const tokenRes = await fetch('/token', { method: 'POST' });
+        // Step 1: Request connection token (supports both Vercel /api/token and local /token)
+        let tokenRes = await fetch('/api/token', { method: 'POST' });
+        if (!tokenRes.ok && tokenRes.status === 404) {
+          tokenRes = await fetch('/token', { method: 'POST' });
+        }
         if (!tokenRes.ok) {
           const errBody = await tokenRes.text();
           throw new Error(`Token endpoint returned ${tokenRes.status}: ${errBody}`);
