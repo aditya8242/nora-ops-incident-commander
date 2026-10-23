@@ -1,0 +1,3 @@
+@echo off
+echo Opening your Napster .env configuration in Notepad...
+notepad.exe "%~dp0.env"

@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nora-Ops — Azure Incident Commander (Napster Omniagent)</title>
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Napster SDK & Panel CSS -->
+  <link rel="stylesheet" href="/vendor/napster-sdk.css">
+  <link rel="stylesheet" href="/omniagent-ui.css">
+
+  <style>
+    :root {
+      --bg-base: #090b10;
+      --bg-surface: #11141c;
+      --bg-surface-elevated: #161a24;
+      --border-subtle: rgba(255, 255, 255, 0.08);
+      --border-accent: rgba(221, 82, 203, 0.3);
+      --napster-pink: #dd52cb;
+      --azure-blue: #0078d4;
+      --azure-blue-hover: #106ebe;
+      --status-critical: #f85149;
+      --status-warning: #d29922;
+      --status-ok: #3fb950;
+      --text-primary: #f0f6fc;
+      --text-secondary: #8b949e;
+      --text-muted: #484f58;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-base);
+      color: var(--text-primary);
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+    }
+
+    /* Top Ops Header */
+    .ops-header {
+      background: rgba(17, 20, 28, 0.85);
+      border-bottom: 1px solid var(--border-subtle);
+      padding: 12px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      backdrop-filter: blur(12px);
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+
+    .ops-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .ops-logo {
+      width: 28px;
+      height: 28px;
+      background: linear-gradient(135deg, var(--napster-pink), var(--azure-blue));
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 14px;
+      color: #fff;
+    }
+
+    .ops-title {
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+    }
+
+    .ops-subtitle {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      color: var(--text-secondary);
+      background: rgba(255, 255, 255, 0.05);
+      padding: 2px 8px;
+      border-radius: 4px;
+      margin-left: 6px;
+    }
+
+    .incident-badge {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(248, 81, 73, 0.12);
+      border: 1px solid rgba(248, 81, 73, 0.35);
+      color: var(--status-critical);
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .pulse-dot {
+      width: 8px;
+      height: 8px;
+      background-color: var(--status-critical);
+      border-radius: 50%;
+      animation: pulse 1.5s infinite;
+    }
+
+    @keyframes pulse {
+      0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(248, 81, 73, 0.7); }
+      70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(248, 81, 73, 0); }
+      100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(248, 81, 73, 0); }
+    }
+
+    /* Main Console Grid */
+    .ops-container {
+      display: grid;
+      grid-template-columns: 1fr 420px;
+      gap: 24px;
+      padding: 24px;
+      max-width: 1600px;
+      margin: 0 auto;
+      width: 100%;
+      flex: 1;
+    }
+
+    /* Left Console */
+    .ops-main-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    /* Telemetry Banner */
+    .telemetry-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+    }
+
+    .telemetry-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .telemetry-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .telemetry-value {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 24px;
+      font-weight: 700;
+    }
+
+    .telemetry-value.critical {
+      color: var(--status-critical);
+    }
+    .telemetry-value.warning {
+      color: var(--status-warning);
+    }
+    .telemetry-value.ok {
+      color: var(--status-ok);
+    }
+
+    .telemetry-sub {
+      font-size: 11px;
+      color: var(--text-secondary);
+    }
+
+    /* War Room Center Card */
+    .warroom-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: 14px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border-subtle);
+      padding-bottom: 12px;
+    }
+
+    .card-title {
+      font-size: 14px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-primary);
+    }
+
+    /* Diagnostics Log Console */
+    .console-terminal {
+      background: #06070a;
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      padding: 14px;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 12px;
+      line-height: 1.6;
+      height: 220px;
+      overflow-y: auto;
+      color: #98c379;
+    }
+
+    .log-line {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 4px;
+    }
+
+    .log-time {
+      color: var(--text-muted);
+    }
+
+    .log-err {
+      color: var(--status-critical);
+    }
+
+    .log-warn {
+      color: var(--status-warning);
+    }
+
+    .log-highlight {
+      color: var(--napster-pink);
+    }
+
+    /* Suggested Judge Voice Prompts */
+    .prompts-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: 14px;
+      padding: 20px;
+    }
+
+    .prompt-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .prompt-pill {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-primary);
+      padding: 8px 14px;
+      border-radius: 20px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .prompt-pill:hover {
+      background: rgba(221, 82, 203, 0.15);
+      border-color: var(--napster-pink);
+      color: #fff;
+    }
+
+    .pill-tag {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 10px;
+      padding: 2px 6px;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 4px;
+      color: var(--text-secondary);
+    }
+
+    /* Right Column: Embedded Omniagent Panel */
+    .omniagent-column {
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Overriding panel fixed placement to fit console layout */
+    .omniagent-panel.warroom-embed {
+      position: relative;
+      right: auto;
+      bottom: auto;
+      width: 100%;
+      height: 600px;
+      box-shadow: 0 12px 48px rgba(0, 0, 0, 0.6);
+      border: 1px solid var(--border-accent);
+    }
+
+    .connection-status-bar {
+      margin-top: 12px;
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border-subtle);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .btn-connect {
+      background: var(--azure-blue);
+      color: #fff;
+      border: none;
+      padding: 6px 14px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .btn-connect:hover {
+      background: var(--azure-blue-hover);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Navigation / War Room Bar -->
+  <header class="ops-header">
+    <div class="ops-brand">
+      <div class="ops-logo">N</div>
+      <div>
+        <span class="ops-title">Nora-Ops</span>
+        <span class="ops-subtitle">AZURE INCIDENT COMMANDER</span>
+      </div>
+    </div>
+
+    <div class="incident-badge">
+      <div class="pulse-dot"></div>
+      <span>INCIDENT #AZ-8921 &bull; PAYMENT-SERVICE CRITICAL</span>
+    </div>
+  </header>
+
+  <!-- Main Console Layout -->
+  <div class="ops-container">
+    
+    <!-- Left Section: Telemetry & Runbooks -->
+    <div class="ops-main-panel">
+      
+      <!-- Live Metrics Banner -->
+      <div class="telemetry-row">
+        <div class="telemetry-card">
+          <span class="telemetry-label">p99 Latency</span>
+          <span class="telemetry-value critical">1,842 ms</span>
+          <span class="telemetry-sub">&uarr; +680% vs baseline (250ms)</span>
+        </div>
+        <div class="telemetry-card">
+          <span class="telemetry-label">HTTP 504 Gateway Errors</span>
+          <span class="telemetry-value critical">14.6%</span>
+          <span class="telemetry-sub">&uarr; Breaching SLA (0.05%)</span>
+        </div>
+        <div class="telemetry-card">
+          <span class="telemetry-label">Pod Heap Memory</span>
+          <span class="telemetry-value warning">91.4%</span>
+          <span class="telemetry-sub">OOMKilled restarts pending</span>
+        </div>
+        <div class="telemetry-card">
+          <span class="telemetry-label">Deployed Version</span>
+          <span class="telemetry-value">v2.1.0-rc2</span>
+          <span class="telemetry-sub">Stable target: v2.0.4</span>
+        </div>
+      </div>
+
+      <!-- Live Diagnostics Console -->
+      <div class="warroom-card">
+        <div class="card-header">
+          <span class="card-title">Live Azure Diagnostic Telemetry Stream</span>
+          <span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--text-secondary);">AKS: aks-prod-eastus-01</span>
+        </div>
+        <div class="console-terminal" id="terminal-stream">
+          <div class="log-line"><span class="log-time">[13:40:12 UTC]</span> <span class="log-warn">[WARN]</span> Azure Application Gateway health probe failure: payment-service:8080/healthz</div>
+          <div class="log-line"><span class="log-time">[13:40:18 UTC]</span> <span class="log-err">[ERROR]</span> Redis pool exhaustion: java.net.SocketTimeoutException: 2500ms exceeded</div>
+          <div class="log-line"><span class="log-time">[13:40:24 UTC]</span> <span class="log-warn">[WARN]</span> Pod payment-service-7d4f9b8c-x92zk heap: 1.84GB / 2.00GB (92%)</div>
+          <div class="log-line"><span class="log-time">[13:40:30 UTC]</span> <span class="log-highlight">[COMMANDER]</span> Nora Omniagent initialized in War Room session.</div>
+          <div class="log-line"><span class="log-time">[13:40:31 UTC]</span> <span class="log-highlight">[MEMORY]</span> Persistent cross-session index loaded: prior incident RCA (2026-10-15) available.</div>
+        </div>
+      </div>
+
+      <!-- Interactive Voice Prompt Scenarios for Judges -->
+      <div class="prompts-card">
+        <div class="card-header">
+          <span class="card-title">Judge Test Scenarios (Click or Speak to Nora)</span>
+          <span style="font-size: 11px; color: var(--napster-pink); font-weight: 600;">Napster Omniagent Capabilities</span>
+        </div>
+        <div class="prompt-pills">
+          <button class="prompt-pill" onclick="sendTextMessage('What is the current health status of the payment service?')">
+            <span class="pill-tag">Function Tool</span>
+            "What is the current health status of the payment service?"
+          </button>
+          <button class="prompt-pill" onclick="sendTextMessage('Do you recall how we mitigated this exact memory leak in our last incident?')">
+            <span class="pill-tag">Persistent Memory</span>
+            "Do you recall how we mitigated this in our last incident?"
+          </button>
+          <button class="prompt-pill" onclick="sendTextMessage('What does our Azure runbook specify as the rollback target?')">
+            <span class="pill-tag">Knowledge Base</span>
+            "What does our Azure runbook specify as the rollback target?"
+          </button>
+          <button class="prompt-pill" onclick="sendTextMessage('Initiate rollback of payment-service to v2.0.4')">
+            <span class="pill-tag">Confirmation Pattern</span>
+            "Initiate rollback of payment-service to v2.0.4"
+          </button>
+        </div>
+
+        <!-- Text Chat Input for Silent Testing -->
+        <div style="margin-top: 18px; display: flex; gap: 10px;">
+          <input type="text" id="chat-input" placeholder="Type any question or instruction for Nora here and press Enter..." 
+                 onkeydown="if(event.key === 'Enter') handleChatSubmit();"
+                 style="flex: 1; background: #06070a; border: 1px solid var(--border-subtle); border-radius: 8px; padding: 10px 14px; color: #fff; font-family: 'Inter', sans-serif; font-size: 13px; outline: none;">
+          <button onclick="handleChatSubmit()" 
+                  style="background: linear-gradient(135deg, var(--napster-pink), var(--azure-blue)); color: #fff; border: none; border-radius: 8px; padding: 10px 22px; font-weight: 600; cursor: pointer; font-size: 13px; transition: opacity 0.2s;">
+            Send to Nora
+          </button>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Right Section: Napster Omniagent Video WebRTC Panel -->
+    <div class="omniagent-column">
+      
+      <!-- Canonical Napster Panel (Matches Official Reference) -->
+      <div class="omniagent-panel warroom-embed" id="omniagent-panel">
+        <header class="omniagent-header">
+          <h2 class="omniagent-title">Nora &bull; SRE Commander</h2>
+          <span class="omniagent-status" id="agent-status-badge">Standby</span>
+        </header>
+
+        <div class="omniagent-mount" id="omniagent-mount">
+          <div class="omniagent-loading" id="agent-loading-text">Connecting to Nora...</div>
+        </div>
+
+        <a class="omniagent-footer"
+           href="https://developers.napster.com"
+           target="_blank"
+           rel="noopener noreferrer"
+           aria-label="Powered by Napster">
+          <span>Powered by</span>
+          <svg class="omniagent-footer__mark"
+               viewBox="0 0 125 30"
+               xmlns="http://www.w3.org/2000/svg"
+               fill="none"
+               role="img"
+               aria-label="Napster">
+            <g clip-path="url(#omniagent-napster-clip)">
+              <mask id="omniagent-napster-mask" style="mask-type:luminance" maskUnits="userSpaceOnUse" x="-1" y="0" width="126" height="30">
+                <path d="M125 0H-0.000244141V30H125V0Z" fill="white"/>
+              </mask>
+              <g mask="url(#omniagent-napster-mask)">
+                <path d="M75.7612 12.7834C74.0741 12.7834 72.5896 13.5689 71.9818 14.782L71.8246 15.0905L71.5848 13.0342H68.4463V30.0185H71.7874V22.4763L71.9818 22.8629C72.5896 24.076 74.0741 24.8615 75.7612 24.8615C79.0114 24.8615 81.4595 22.2666 81.4595 18.8246C81.4595 15.3824 79.0114 12.7834 75.7612 12.7834ZM75.1285 21.7278C74.351 21.7278 73.6053 21.4207 73.0554 20.874C72.5057 20.327 72.1968 19.5854 72.1968 18.8122C72.1968 18.039 72.5057 17.2972 73.0554 16.7504C73.6053 16.2037 74.351 15.8965 75.1285 15.8965C75.9061 15.8965 76.6519 16.2037 77.2016 16.7504C77.7515 17.2972 78.0604 18.039 78.0604 18.8122C78.0604 19.5854 77.7515 20.327 77.2016 20.874C76.6519 21.4207 75.9061 21.7278 75.1285 21.7278Z" fill="white"/>
+                <path d="M87.5737 24.8615C90.0547 24.8615 92.5689 23.7883 92.5689 21.3908C92.5689 19.7047 91.4152 18.5121 89.0458 17.7759C88.5578 17.6155 88.1361 17.4838 87.7805 17.3647C86.2256 16.8711 85.8038 16.7396 85.8038 16.2708C85.8038 15.8019 86.4821 15.4894 87.152 15.4894C87.6853 15.4894 88.5827 15.6909 88.6778 16.4229H92.0478C91.9362 14.2721 89.8935 12.7752 87.0361 12.7752C84.0505 12.7752 82.442 14.5764 82.442 16.2708C82.442 17.965 83.5916 19.1124 86.052 19.791L86.8252 20.0007C88.6239 20.4942 89.2277 20.6587 89.2277 21.3126C89.2277 21.9664 88.3759 22.135 87.644 22.135C86.4283 22.135 85.5764 21.6992 85.4442 21.0123H82.0947C82.2104 23.4675 84.2035 24.8615 87.5737 24.8615Z" fill="white"/>
+                <path d="M120.3 15.8969C120.667 15.905 121.029 15.9832 121.367 16.1272L121.809 13.2116C121.445 12.934 120.995 12.7889 120.536 12.8003C119.709 12.8003 118.902 13.2445 118.121 14.1204L117.976 14.2849L117.79 13.0512H114.652V24.6276H117.989V19.9682C117.989 17.3404 118.807 15.8969 120.3 15.8969Z" fill="white"/>
+                <path d="M101.272 13.0182H98.4808V9.51447H95.1397V13.0182H93.1672V16.1313H95.1397V24.6275H98.4808V16.1313H101.272V13.0182Z" fill="white"/>
+                <path d="M113.315 18.9849C113.315 15.3906 110.863 12.7834 107.48 12.7834C104.098 12.7834 101.642 15.2961 101.642 18.7506C101.642 22.2912 104.185 24.8615 107.691 24.8615C110.875 24.8615 112.736 22.6614 113.067 21.037L110.172 20.7286C109.889 21.1154 109.515 21.4278 109.082 21.6386C108.65 21.8493 108.172 21.9518 107.691 21.9376C105.789 21.9376 105.036 20.8848 104.962 19.906V19.7951H113.302L113.315 18.9849ZM104.974 17.5949V17.4838C105.053 16.4558 106.103 15.7073 107.456 15.7073C109.002 15.7073 109.879 16.5998 109.936 17.4838V17.5949H104.974Z" fill="white"/>
+                <path d="M63.4555 13.0179L63.2156 15.0741L63.0628 14.7657C62.4506 13.5319 60.9952 12.767 59.3039 12.767C56.0412 12.767 53.585 15.362 53.585 18.8082C53.585 22.2544 56.0412 24.8451 59.3039 24.8451C60.958 24.8451 62.4506 24.0597 63.0628 22.8465L63.2156 22.5381L63.4555 24.5944H66.5981V13.0179H63.4555ZM59.9117 21.7279C59.3318 21.7264 58.7652 21.5537 58.2839 21.2317C57.8026 20.9098 57.4281 20.4531 57.2078 19.9195C56.9877 19.3859 56.9314 18.7993 57.0466 18.2339C57.1616 17.6685 57.4428 17.1498 57.8543 16.7433C58.2659 16.3369 58.7894 16.061 59.3587 15.9505C59.9281 15.8401 60.5175 15.9001 61.0524 16.1229C61.5875 16.3457 62.0441 16.7214 62.3643 17.2022C62.6846 17.6832 62.8543 18.2477 62.8518 18.8247C62.8603 19.21 62.7901 19.593 62.645 19.9505C62.5 20.308 62.2836 20.6324 62.0085 20.9039C61.7335 21.1755 61.4057 21.3887 61.0452 21.5303C60.6848 21.672 60.2991 21.7393 59.9117 21.7279Z" fill="white"/>
+                <path d="M52.1992 24.6278V8.25226H48.8579V19.1419L40.9764 8.25226H37.5898V24.6278H40.9268V13.7423L48.8083 24.6278H52.1992Z" fill="white"/>
+                <path d="M27.076 5.02794C26.7858 5.02768 26.4957 5.04554 26.2077 5.0814H26.1497L26.1125 5.03616C24.9076 3.46817 23.3554 2.19754 21.5765 1.32298C19.7976 0.448419 17.8398 -0.00653076 15.8555 -0.00653076C13.8711 -0.00653076 11.9134 0.448419 10.1345 1.32298C8.35557 2.19754 6.80333 3.46817 5.59832 5.03616L5.56525 5.0814H5.50735C5.21792 5.04566 4.92651 5.02781 4.63486 5.02794H2.88984V8.24794L2.83195 8.27674C1.98996 8.6702 1.27799 9.29392 0.779284 10.075C0.280581 10.856 0.0157471 11.7621 0.0157471 12.6873C0.0157471 13.6125 0.280581 14.5186 0.779284 15.2996C1.27799 16.0807 1.98996 16.7043 2.83195 17.0978L2.88984 17.1225V17.1883C2.88984 20.6131 4.25782 23.8976 6.69283 26.3192C9.12785 28.7408 12.4304 30.1013 15.8741 30.1013C19.3176 30.1013 22.6202 28.7408 25.0553 26.3192C27.4904 23.8976 28.8584 20.6131 28.8584 17.1883V17.1225L28.9161 17.0978C29.7582 16.7043 30.4702 16.0807 30.9688 15.2996C31.4675 14.5186 31.7324 13.6125 31.7324 12.6873C31.7324 11.7621 31.4675 10.856 30.9688 10.075C30.4702 9.29392 29.7582 8.6702 28.9161 8.27674L28.8584 8.24794V5.02794H27.076ZM8.99739 6.08071C9.89515 5.17926 10.9636 4.46368 12.1411 3.97533C13.3186 3.48698 14.5818 3.23554 15.8575 3.23554C17.1332 3.23554 18.3964 3.48698 19.574 3.97533C20.7514 4.46368 21.8198 5.17926 22.7177 6.08071L22.8128 6.17941L22.6928 6.24521C22.1991 6.51465 21.7252 6.81836 21.2746 7.15405L21.2207 7.19105L21.1669 7.16227C19.5224 6.32397 17.7053 5.87499 15.8575 5.85042C14.0097 5.87499 12.1926 6.32397 10.548 7.16227L10.4902 7.19105L10.4405 7.15405C9.98838 6.81831 9.51304 6.51462 9.01807 6.24521L8.89814 6.16707L8.99739 6.08071ZM25.3103 17.0815C25.3103 19.5746 24.3145 21.9659 22.5418 23.729C20.7689 25.4919 18.3645 26.4824 15.8575 26.4824C13.3505 26.4824 10.9461 25.4919 9.17334 23.729C7.40059 21.9659 6.40468 19.5746 6.40468 17.0815V8.91004L6.53287 8.94294C8.18691 9.35419 9.75412 11.1595 10.118 11.5996C10.8778 10.8672 11.7766 10.2926 12.762 9.90917C13.7474 9.52578 14.7997 9.34131 15.8575 9.36652C16.9153 9.34131 17.9677 9.52578 18.953 9.90917C19.9385 10.2926 20.8372 10.8672 21.597 11.5996C21.9568 11.1595 23.5116 9.35419 25.1821 8.94294L25.3103 8.91004V17.0815Z" fill="white"/>
+              </g>
+            </g>
+            <defs>
+              <clipPath id="omniagent-napster-clip">
+                <rect width="125" height="30" fill="white"/>
+              </clipPath>
+            </defs>
+          </svg>
+        </a>
+      </div>
+
+      <!-- Quick Session Controls -->
+      <div class="connection-status-bar">
+        <span id="session-status-text">WebRTC: Disconnected</span>
+        <button class="btn-connect" id="btn-reconnect" onclick="initOmniagentSession()">Connect Nora</button>
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- Web SDK Script (Self-Contained Bundle) -->
+  <script src="/vendor/napster-sdk.js"></script>
+  
+  <script>
+    let sdkInstance = null;
+
+    function appendTerminalLog(level, message) {
+      const stream = document.getElementById('terminal-stream');
+      const now = new Date().toISOString().substring(11, 19);
+      const line = document.createElement('div');
+      line.className = 'log-line';
+      
+      let levelHtml = `<span class="log-warn">[INFO]</span>`;
+      if (level === 'CRITICAL' || level === 'ERROR') levelHtml = `<span class="log-err">[${level}]</span>`;
+      if (level === 'COMMANDER') levelHtml = `<span class="log-highlight">[NORA]</span>`;
+
+      line.innerHTML = `<span class="log-time">[${now} UTC]</span> ${levelHtml} ${message}`;
+      stream.appendChild(line);
+      stream.scrollTop = stream.scrollHeight;
+    }
+
+    async function initOmniagentSession() {
+      const mountEl = document.getElementById('omniagent-mount');
+      const statusBadge = document.getElementById('agent-status-badge');
+      const statusText = document.getElementById('session-status-text');
+      const loadingText = document.getElementById('agent-loading-text');
+
+      statusBadge.innerText = 'Connecting...';
+      statusText.innerText = 'Requesting token from /token...';
+
+      try {
+        // Step 1: Request connection token from local server (keeps API key secure)
+        const tokenRes = await fetch('/token', { method: 'POST' });
+        if (!tokenRes.ok) {
+          const errBody = await tokenRes.text();
+          throw new Error(`Token endpoint returned ${tokenRes.status}: ${errBody}`);
+        }
+        const data = await tokenRes.json();
+        const token = data.token;
+
+        statusText.innerText = 'Initializing WebRTC video avatar...';
+        appendTerminalLog('INFO', 'Received Napster session token. Negotiating WebRTC data channel...');
+
+        // Step 2: Initialize Web SDK with canonical panel options
+        const sdk = window.napsterCompanionApiSDK || window.NapsterCompanionApiSdk;
+        if (!sdk) {
+          throw new Error('NapsterCompanionApiSdk script not found in window.');
+        }
+
+        sdkInstance = await sdk.init(token, {
+          mountContainer: mountEl,
+          className: "omniagent-sdk-root",      // Required by omniagent-ui.css to fit panel
+          avatarStyle: { view: "rectangle" },   // Canonical rectangular panel view
+          onAvatarReady: (isReady) => {
+            console.log('[Avatar Ready]', isReady);
+            statusBadge.innerText = 'Live & Ready';
+            statusText.innerText = 'WebRTC: Active (Avatar Ready)';
+            appendTerminalLog('COMMANDER', 'Nora video avatar is fully rendered and ready for commands.');
+          },
+          onData: (eventMsg) => {
+            console.log('[Omniagent Event]', eventMsg);
+            const evt = eventMsg.event || eventMsg.type || '';
+            const d = eventMsg.data || {};
+            
+            if (evt === 'agent_state_changed') {
+              statusBadge.innerText = d.state || 'Live';
+            }
+            if (evt === 'tool_called' || d.function_name) {
+              const fn = d.function_name || d.name || 'diagnostics';
+              appendTerminalLog('COMMANDER', `Executing Tool: ${fn}(${JSON.stringify(d.parameters || {})})`);
+            }
+            if (d.transcript || d.text || d.message?.content || d.message?.text) {
+              const text = d.transcript || d.text || d.message?.content || d.message?.text;
+              appendTerminalLog('COMMANDER', `Nora: "${text}"`);
+            }
+          }
+        });
+
+        statusBadge.innerText = 'Live';
+        statusText.innerText = 'WebRTC: Active (Audio + Video)';
+        appendTerminalLog('COMMANDER', 'Nora connected to War Room channel.');
+
+        // Initial system prompt greeting
+        setTimeout(() => {
+          if (sdkInstance && sdkInstance.sendCommand) {
+            sdkInstance.sendCommand({
+              type: "send_message",
+              data: {
+                role: "system",
+                text: "You are Nora, Senior SRE Incident Commander for Azure. Briefly state in one sentence that you have joined the war room and are analyzing the payment-service memory leak.",
+                trigger_response: true
+              }
+            });
+          }
+        }, 1500);
+
+      } catch (err) {
+        console.error('Session init error:', err);
+        statusBadge.innerText = 'Error';
+        statusText.innerText = 'Connection Failed: ' + err.message;
+        loadingText.innerText = 'Connection error: ' + err.message;
+        appendTerminalLog('CRITICAL', `WebRTC handshake failed: ${err.message}`);
+      }
+    }
+
+    function sendTextMessage(promptText) {
+      if (!promptText || !promptText.trim()) return;
+      promptText = promptText.trim();
+      appendTerminalLog('INFO', `User query: "${promptText}"`);
+
+      if (!sdkInstance || !sdkInstance.sendCommand) {
+        alert("Nora avatar is still connecting. Please wait a moment.");
+        return;
+      }
+
+      const payload = {
+        type: "send_message",
+        data: {
+          role: "user",
+          text: promptText,
+          trigger_response: true
+        }
+      };
+
+      console.log('Sending command to Nora:', payload);
+      const res = sdkInstance.sendCommand(payload);
+      console.log('sendCommand returned:', res);
+
+      // If channel is still opening, retry in 1.2s
+      if (res === false) {
+        appendTerminalLog('WARN', 'WebRTC data channel opening, queued message...');
+        setTimeout(() => {
+          sdkInstance.sendCommand(payload);
+          appendTerminalLog('COMMANDER', `Message delivered to Nora: "${promptText}"`);
+        }, 1200);
+      } else {
+        appendTerminalLog('COMMANDER', `Message delivered to Nora: "${promptText}"`);
+      }
+    }
+
+    function handleChatSubmit() {
+      const input = document.getElementById('chat-input');
+      if (input && input.value) {
+        sendTextMessage(input.value);
+        input.value = '';
+      }
+    }
+
+    // Auto-attempt connection on page load
+    window.addEventListener('DOMContentLoaded', () => {
+      initOmniagentSession();
+    });
+  </script>
+</body>
+</html>

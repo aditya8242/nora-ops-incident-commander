@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: nora-ops-incident-commander
+    env: node
+    plan: free
+    buildCommand: npm install
+    startCommand: node local-token-server/token-server.js
+    envVars:
+      - key: PORT
+        value: 5173
+      - key: NAPSTER_API_KEY
+        sync: false
+      - key: AGENT_ID
+        value: 132c2e86-432b-4507-bc8b-a34e95e1ff5c

@@ -1,0 +1,13 @@
+{
+  "name": "incident-commander-nora",
+  "version": "1.0.0",
+  "description": "Enterprise SRE & Azure War Room Omniagent for Microsoft Ignite 2026",
+  "type": "module",
+  "scripts": {
+    "start": "node local-token-server/token-server.js"
+  },
+  "dependencies": {
+    "@reduxjs/toolkit": "^2.6.1",
+    "@touchcastllc/napster-companion-api": "^1.1.20"
+  }
+}
